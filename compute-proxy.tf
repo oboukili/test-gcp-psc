@@ -6,6 +6,7 @@ data "google_compute_image" "debian" {
   project = "debian-cloud"
 }
 
+# https://cloud.google.com/traffic-director/docs/set-up-gce-vms-auto
 resource "google_compute_instance_template" "envoy" {
   name           = "envoy"
   machine_type   = "e2-medium"
@@ -18,7 +19,8 @@ resource "google_compute_instance_template" "envoy" {
   }
 
   network_interface {
-    network = "default"
+    network    = google_compute_subnetwork.psc_ilb_producer_network.network
+    subnetwork = google_compute_subnetwork.psc_ilb_producer_network.name
   }
 
   scheduling {
@@ -45,15 +47,15 @@ resource "google_compute_instance_template" "envoy" {
       "api-version": "0.2",
       "proxy-spec": {
         "proxy-port": 15001,
-        "network": "my-network",
+        "network": "psc",
         "tracing": "ON",
         "access-log": "/var/log/envoy/access.log"
       }
       "service": {
-        "serving-ports": [80, 81]
+        "serving-ports": [5432, 3306]
       },
      "labels": {
-       "app_name": "bookserver_app",
+       "app_name": "proxy",
        "app_version": "STABLE"
       }
     }

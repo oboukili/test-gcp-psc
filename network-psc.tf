@@ -17,11 +17,10 @@ resource "google_compute_health_check" "mysql" {
 }
 
 resource "google_compute_region_backend_service" "proxy_tcp" {
-  name               = "proxy-tcp"
-  locality_lb_policy = "LEAST_REQUEST"
-  session_affinity   = "CLIENT_IP_PORT_PROTO"
+  name             = "proxy-tcp"
+  session_affinity = "CLIENT_IP_PORT_PROTO"
+  # TODO: set envoy healthcheck here instead
   health_checks = [
-    google_compute_health_check.mysql.id,
     google_compute_health_check.postgresql.id,
   ]
   backend {
@@ -29,8 +28,8 @@ resource "google_compute_region_backend_service" "proxy_tcp" {
   }
 }
 
-resource "google_compute_forwarding_rule" "psc_ilb_postgresql" {
-  name                  = "psc-ilb-postgresql"
+resource "google_compute_forwarding_rule" "psc_proxy" {
+  name                  = "psc-proxy"
   load_balancing_scheme = "INTERNAL"
   backend_service       = google_compute_region_backend_service.proxy_tcp.id
   allow_global_access   = true
@@ -40,12 +39,12 @@ resource "google_compute_forwarding_rule" "psc_ilb_postgresql" {
   subnetwork            = google_compute_subnetwork.psc_ilb_producer_network.name
 }
 
-resource "google_compute_service_attachment" "psc_ilb_postgresql" {
+resource "google_compute_service_attachment" "psc_proxy" {
   name                  = "psc-ilb-postgresql"
   enable_proxy_protocol = true
   connection_preference = "ACCEPT_MANUAL"
   nat_subnets           = [google_compute_subnetwork.psc_ilb_nat.id]
-  target_service        = google_compute_forwarding_rule.psc_ilb_postgresql.id
+  target_service        = google_compute_forwarding_rule.psc_proxy.id
 
   consumer_accept_lists {
     project_id_or_num = "olivierboukili-playground2"

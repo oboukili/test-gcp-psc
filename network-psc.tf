@@ -7,21 +7,20 @@ resource "google_compute_health_check" "postgresql" {
   }
 }
 
-resource "google_compute_health_check" "mysql" {
-  name               = "mysql"
+resource "google_compute_health_check" "envoy" {
+  name               = "envoy"
   check_interval_sec = 10
   timeout_sec        = 5
   tcp_health_check {
-    port = "3306"
+    port = "15001"
   }
 }
 
 resource "google_compute_region_backend_service" "proxy_tcp" {
   name             = "proxy-tcp"
   session_affinity = "CLIENT_IP_PORT_PROTO"
-  # TODO: set envoy healthcheck here instead
   health_checks = [
-    google_compute_health_check.postgresql.id,
+    google_compute_health_check.envoy.id,
   ]
   backend {
     group = google_compute_region_instance_group_manager.proxy.instance_group
@@ -40,7 +39,7 @@ resource "google_compute_forwarding_rule" "psc_proxy" {
 }
 
 resource "google_compute_service_attachment" "psc_proxy" {
-  name                  = "psc-ilb-postgresql"
+  name                  = "psc-proxy"
   enable_proxy_protocol = true
   connection_preference = "ACCEPT_MANUAL"
   nat_subnets           = [google_compute_subnetwork.psc_ilb_nat.id]

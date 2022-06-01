@@ -12,3 +12,17 @@ resource "google_sql_database_instance" "postgres" {
   }
   depends_on = [google_service_networking_connection.service_networking]
 }
+
+resource "random_password" "postgres" {
+  length      = 50
+  special     = false
+  min_numeric = 5
+  min_lower   = 5
+  min_upper   = 5
+}
+
+resource "google_sql_user" "users" {
+  name     = "poc"
+  instance = google_sql_database_instance.postgres.name
+  password = random_password.postgres.result
+}

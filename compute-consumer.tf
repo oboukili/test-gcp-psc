@@ -1,7 +1,15 @@
+data "google_compute_default_service_account" "default_consumer" {
+  project = local.consumer_project
+}
+
 resource "google_compute_instance_template" "consumer" {
   name         = "consumer"
   machine_type = "e2-medium"
-  project      = "olivierboukili-playground2"
+  project      = local.consumer_project
+  service_account {
+    email  = data.google_compute_default_service_account.default_consumer.email
+    scopes = []
+  }
 
   disk {
     source_image = "debian-cloud/debian-10"
@@ -20,5 +28,5 @@ resource "google_compute_instance_template" "consumer" {
 resource "google_compute_instance_from_template" "consumer" {
   name                     = "consumer"
   source_instance_template = google_compute_instance_template.consumer.id
-  project                  = "olivierboukili-playground2"
+  project                  = local.consumer_project
 }

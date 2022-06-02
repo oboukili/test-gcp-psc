@@ -1,20 +1,18 @@
-data "google_compute_default_service_account" "default" {
-}
+data "google_compute_default_service_account" "default" {}
 
 data "google_compute_image" "debian" {
   family  = "debian-10"
   project = "debian-cloud"
 }
 
-resource "random_id" "proxy_template" {
-  byte_length = 4
-  keepers = {
+resource "time_static" "template_update" {
+  triggers = {
     version = data.google_compute_image.debian.image_id
   }
 }
 
 resource "google_compute_instance_template" "proxy" {
-  name           = format("proxy-%s", random_id.proxy_template.hex)
+  name           = format("proxy-%s", time_static.template_update.triggers.version)
   machine_type   = "e2-medium"
   can_ip_forward = true
 
@@ -24,9 +22,11 @@ resource "google_compute_instance_template" "proxy" {
     boot         = true
   }
 
+  tags = ["proxy"]
+
   network_interface {
-    network    = google_compute_subnetwork.psc_ilb_producer_network.network
-    subnetwork = google_compute_subnetwork.psc_ilb_producer_network.name
+    network    = google_compute_subnetwork.psc_ilb_producer_subnetwork.network
+    subnetwork = google_compute_subnetwork.psc_ilb_producer_subnetwork.name
   }
 
   scheduling {
@@ -65,12 +65,9 @@ resource "google_compute_region_instance_group_manager" "proxy" {
     name = "postgresql"
     port = 5432
   }
-  named_port {
-    name = "mysql"
-    port = 3306
-  }
+
   auto_healing_policies {
-    health_check      = google_compute_health_check.envoy.id
+    health_check      = google_compute_health_check.postgresql.id
     initial_delay_sec = 300
   }
 }

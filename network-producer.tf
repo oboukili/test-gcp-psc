@@ -61,6 +61,7 @@ resource "google_compute_firewall" "postgresql" {
   }
   source_ranges = setunion(
     flatten([for r in data.google_netblock_ip_ranges.healthchecks : r.cidr_blocks_ipv4]),
+    # WARN: Note that the following is essential to allow traffic from the PSC SNAT IP ranges (e.g. all consumers) to connect to the proxy
     toset([google_compute_subnetwork.psc_ilb_nat.ip_cidr_range])
   )
   target_tags = ["proxy"]

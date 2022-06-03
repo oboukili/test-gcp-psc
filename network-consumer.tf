@@ -13,19 +13,3 @@ resource "google_compute_forwarding_rule" "psc_ilb_consumer" {
   ip_address            = google_compute_address.psc_ilb_consumer_address.id
   project               = local.consumer_project
 }
-
-
-resource "google_compute_firewall" "postgresql_consumer" {
-  name    = "postgresql"
-  network = "default"
-  allow {
-    protocol = "tcp"
-    ports    = ["5432"]
-  }
-  log_config {
-    metadata = "INCLUDE_ALL_METADATA"
-  }
-  source_service_accounts = [data.google_compute_default_service_account.default_consumer.email]
-  destination_ranges      = [google_compute_address.psc_ilb_consumer_address.address]
-  project                 = local.consumer_project
-}
